@@ -1,7 +1,6 @@
 ---
 title: "Serological Analysis Examples"
-author: "Morgan Kain"
-date: "2024-07-03"
+author: "Morgan P. Kain, Jonathan H. Epstein, Noam Ross"
 output: pdf_document
 ---
 
@@ -179,7 +178,7 @@ dataset3 <- sim.data %>% filter(param_set == 150)
 
 Here we present the analysis of three serological datasets (3 of the 500 analyzed in the main text). These three datasets represent three alternatives in regards to percent population seroposivity, differences in mean MFI between seropositive and seronegative groups, and distributional skew. As described in the main text, seropositivity was simulated to be a function of 2 categorical covariates with two levels each (that could capture, for example, sex and species) and 1 continuous covariate (e.g., age in years). 
 
-We analyze each dataset here with a single method well-suited for that dataset (the consequences of using a poorly-suited analysis are summarized in the main text). Specifically, we consider both a two step extreme value + logistic regression approach as well as a single step Bayesian latent class regression (LCR) approach. Though we generally advocate against a two step approach when seeking inference about risk factors of seropositivity (what we call here an "epidemiological analysis"), an extreme value approach (e.g., 3sd method) is well suited for serostatus assignment and population-level seropositivity estimates when seropositivity is low (e.g., under 3%) and the positive MFI values have high variance--which together results in a unimodal right-skewed MFI distribution. Though using dichotomous seropositive assignments can result in over-confidence in logistic regression-estimated parameter values (too-narrow confidence intervals), attempting to estimate risk factors with very low seroposivity may nevertheless result in a lack of clear inference on risk factors (i.e., CI overlapping zero) because of low power. We show a two step extreme value approach with one of the three datasets here.
+We analyze each dataset here with a single method well-suited for that dataset (the consequences of using a poorly-suited analysis are summarized in the main text). Specifically, we consider both a two step extreme value + logistic regression approach as well as a single step Bayesian latent class regression (LCR) approach. Though we generally advocate against a two step approach when seeking inference about risk factors of seropositivity (what we call here an "epidemiological analysis"), an extreme value approach (e.g., 3sd method) is well suited for serostatus assignment and seroprevalence estimates when true seroprevalence is low (e.g., under 3%) and the positive MFI values have high variance--which together results in a unimodal right-skewed MFI distribution. Though using dichotomous seropositive assignments can result in over-confidence in logistic regression-estimated parameter values (too-narrow confidence intervals), attempting to estimate risk factors with very low seroposivity may nevertheless result in a lack of clear inference on risk factors (i.e., CI overlapping zero) because of low power. We show a two step extreme value approach with one of the three datasets here.
 
 We work through the analysis from raw data visualization through diagnostics prior to comparing estimated values and simulated "truth", keeping the true simulated coefficients hidden until this point.
 
@@ -188,7 +187,7 @@ We work through the analysis from raw data visualization through diagnostics pri
 
 For the analysis of any new serological (MFI: Median/Mean Fluorescence Intensity) dataset, the first step is a visual inspection of the MFI distribution to check for: a) bimodality, and b) if bimodality is present, evidence of right-skew in the right mode.
 
-Given our findings (see main text) that false-negative and false-positive serostatus assignment error rates--and thus bias in population-level seropositivity estimates--are lower for the 3sd extreme value approach when MFI is analyzed on a linear scale but for clustering methods when MFI is analyzed on a log scale, we advise visualization of data on both scales. 
+Given our findings (see main text) that false-negative and false-positive serostatus assignment error rates--and thus bias in seroprevalence estimates--are lower for the 3sd extreme value approach when MFI is analyzed on a linear scale but for clustering methods when MFI is analyzed on a log scale, we advise visualization of data on both scales. 
 
 Our three datasets chosen for analysis here are visualized in Figure 1. 
 
@@ -224,12 +223,12 @@ gg.2 <- sim.data %>% filter(log_mfi == "mfi") %>% {
 gridExtra::grid.arrange(gg.1, gg.2, ncol = 1)
 ```
 
-A few things stand out from these visualizations. First, the dataset pictured in the left column has a long right tail on the linear scale and no strong bimodality when visualized on either scale. This observation hints that seropositivity is likely quite low in this dataset (or that seronegative and seropositive individuals have very similar MFI values; however, this is both unlikely in an empirical dataset and would be very difficult to analyze regardless: see Figure S19 in manuscript's supplemental material). Second, both of the datasets in the right two columns have clear bimodality, which is especially prominent on the log scale. Third, the right mode of the right-most dataset shows clear left skew due to the MFI values getting "stacked up" at the machine maximum. 
+A few things stand out from these visualizations. First, the dataset pictured in the left column has a long right tail on the linear scale and no strong bimodality when visualized on either scale. This observation hints that seroprevalence is likely quite low in this dataset (or that seronegative and seropositive individuals have very similar MFI values; however, this is both unlikely in an empirical dataset and would be very difficult to analyze regardless: see Figure S19 in manuscript's supplemental material). Second, both of the datasets in the right two columns have clear bimodality, which is especially prominent on the log scale. Third, the right mode of the right-most dataset shows clear left skew due to the MFI values getting "stacked up" at the machine maximum. 
 
 
 ### An analysis plan
 
-This visual inspection leads us to the following analysis plan for the three datasets for assigning serostatus (see the main text for further exposition). Dataset 1 (Figure 1, left column): 3sd with a cutoff derived from a robust mean and sd calculation using the R functions dplR::tbrm and jointseg::estimateSd, respectively; MFI analyzed on a linear scale. Estimation of population-level percent seropositivity using a binomial confidence interval. Analysis of risk factors of seropositivity using logistic regression with dichotomous serostatus assignments.
+This visual inspection leads us to the following analysis plan for the three datasets for assigning serostatus (see the main text for further exposition). Dataset 1 (Figure 1, left column): 3sd with a cutoff derived from a robust mean and sd calculation using the R functions dplR::tbrm and jointseg::estimateSd, respectively; MFI analyzed on a linear scale. Estimation of seroprevalence using a binomial confidence interval. Analysis of risk factors of a positive serostatus using logistic regression with dichotomous serostatus assignments.
 
 Dataset 2 (Figure 1, center column): Bayesian LCR fitting normal distributions to log MFI. Estimation of population seroposivity and risk factors within the Bayesian model. 
 
@@ -257,7 +256,7 @@ thresh <- mean1 + 3 * sd1
 dataset1.linear_mfi %<>% mutate(seropositive = ifelse(mfi > thresh, 1, 0))
 ```
 
-B) Estimate population level percent seropositivity
+B) Estimate seroprevalence
 
 ```{r set1_b, echo=TRUE, warning=FALSE, message=FALSE}
 dataset1.pop_mod  <- glm(seropositive ~ 1, family = "binomial"
@@ -278,7 +277,7 @@ dataset1.pop_mod  <- glm(seropositive ~ 1, family = "binomial"
 
 ```
 
-C) Estimate the impacts of risk factors on seropositivity
+C) Estimate the impacts of risk factors on individual seropositivity
 
 ```{r set1_c, echo=TRUE, warning=FALSE, message=FALSE}
 dataset1.risk_mod   <- glm(seropositive ~ cat1f + cat2f + con1f
@@ -306,7 +305,7 @@ dataset1.risk_mod   <- glm(seropositive ~ cat1f + cat2f + con1f
 
 ### Dataset 2
 
-A) Assign serostatus, predict population-level seropositivity and risk factors
+A) Assign serostatus, predict seroprevalence, and estimate risk factors for individual seropositivity
 
 ```{r set2_a, echo=TRUE, warning=FALSE, message=FALSE}
 
@@ -393,7 +392,7 @@ samps.mat2[ , , "beta_base"] %>%
 
 ```
 
-```{r set2_d, echo=TRUE, warning=FALSE, message=FALSE, fig.cap = "Traceplot for population seropositivity estimate"}
+```{r set2_d, echo=TRUE, warning=FALSE, message=FALSE, fig.cap = "Traceplot for seroprevalence estimates"}
 
 (samps.mat2[ , , "pop_sero"] / nrow(dataset2.log)) %>% 
   as.data.frame() %>% 
@@ -439,7 +438,7 @@ dataset2.pop_pos <- (samps.simp2$pop_sero/nrow(dataset2.log)) %>%
 
 ### Dataset 3
 
-A) Assign serostatus, predict population-level seropositivity and risk factors
+A) Assign serostatus, predict seroprevalence, and risk factors for individual seropositivity
 
 ```{r set3_a, echo=TRUE, message=FALSE, warning=FALSE}
 
@@ -533,7 +532,7 @@ samps.mat3[ , , "beta_base"] %>%
   
 ```
 
-```{r set3_d, echo=TRUE, warning=FALSE, message=FALSE, fig.cap = "Traceplot for population seropositivity estimate"}
+```{r set3_d, echo=TRUE, warning=FALSE, message=FALSE, fig.cap = "Traceplot for seroprevalence estimates"}
 
 (samps.mat3[ , , "pop_sero"] / nrow(dataset3.log)) %>% 
   as.data.frame() %>% 
@@ -639,7 +638,7 @@ dataset3.log %>% mutate(
 
 Population seropositivity, all datasets. Estimates for the two LCR models show high confidence (narrow CI) because of high confidence in the shapes of the two distributions. This leads to over-confidence (and thus CI that do not cover the true value) for the Normal-Skew Normal model.
 
-```{r comb_e, echo=TRUE, warning=FALSE, message=FALSE, fig.cap = "True vs estimated population-level seropositivity. Intervals are 95% CI."}
+```{r comb_e, echo=TRUE, warning=FALSE, message=FALSE, fig.cap = "True vs estimated seroprevalence. Intervals are 95% CI."}
 
 data.frame(
   dataset  = c(1, 2, 3)
@@ -664,7 +663,7 @@ data.frame(
 
 ```
 
-Risk factors (regression coefficients). Here, because of the the low seropositivity in dataset 1, power is very low to estimate the effects of risk factors on seropositivity and thus CI on most of the coefficients for the 3sd + logistic regression are very wide. This is in contrast to using the two step 3sd + logistic regression approach in general. CI on these regression coefficients tend to be much too narrow (undercover) when seropositivity is higher (see main text). As was found for a number of other LCR model fits (see main text for more details), for the Normal-Skew Normal example fit here, one level of the categorical covariates (the "Intercept") was estimated to be too large and another too small.
+Risk factors (regression coefficients). Here, because of the low seroprevalence in dataset 1, power is very low to estimate the effects of risk factors on seropositivity and thus CI on most of the coefficients for the 3sd + logistic regression are very wide. This is in contrast to using the two step 3sd + logistic regression approach in general. CI on these regression coefficients tend to be much too narrow (undercover) when seroprevalence is higher (see main text). As was found for a number of other LCR model fits (see main text for more details), for the Normal-Skew Normal example fit here, one level of the categorical covariates (the "Intercept") was estimated to be too large and another too small.
 
 ```{r comb_f, echo=TRUE, warning=FALSE, message=FALSE, fig.cap = "True vs estimated risk factors (regression coefficients). Intervals are 95% CI."}
 risk_coef_pred %>% left_join(., sim.params.t, by = c("dataset", "coef")) %>% mutate(
